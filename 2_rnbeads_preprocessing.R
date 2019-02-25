@@ -178,4 +178,82 @@ x = heatmap.2(as.matrix(meth.norm.sig),col=colors,scale="none", trace="none",dis
 labRow = FALSE,xlab="", ylab="CpGs",key.title="Methylation lvl",ColSideColors=clab)
 legend("topright",legend=c("TP53 WT","TP53 MT"),fill=c("#ffb3ba","#baffc9"), border=T, bty="n" )
 dev.off()
-#####################################
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+# P53-WT TREATED VS UNTREATED
+# 1) filtering out P53 MU samples
+rnb.set.filtered_WT=remove.samples(rnb.set.filtered,samples(rnb.set.filtered)[which(rnb.set.filtered@pheno$TP53=="MU")])
+
+# 2) filtering out P53 WT samples
+rnb.set.filtered_MU=remove.samples(rnb.set.filtered,samples(rnb.set.filtered)[which(rnb.set.filtered@pheno$TP53=="WT")])
+
+# 3) Differential methylation
+rnb.options("columns.pairing"=c("Treatment"="Patient"))
+rnb.options("differential.variability"=FALSE)
+
+dmc_WT <- rnb.execute.computeDiffMeth(rnb.set.filtered_WT,pheno.cols=c("Treatment"))
+dmc_MU <- rnb.execute.computeDiffMeth(rnb.set.filtered_MU,pheno.cols=c("Treatment"))
+
+comparison <- get.comparisons(dmc_WT)[1]
+wt_table <-get.table(dmc_WT, comparison, "sites", return.data.frame=TRUE)
+saveRDS(wt_table,"wt_table.rds")
+
+comparison <- get.comparisons(dmc_MU)[1]
+mu_table <-get.table(dmc_MU, comparison, "sites", return.data.frame=TRUE)
+saveRDS(mu_table,"mu_table.rds")
+# 4) stats
+wt_table = readRDS("wt_table.rds")
+mu_table = readRDS("mu_table.rds")
+
+options(scipen=999)
+library(DESeq2)
+library(gplots)
+library(factoextra)
+library(RColorBrewer)
+library(graphics)
+
+png("Volcano_wt.png",width= 3.25,
+  height= 3.25,units="in",
+  res=1200,pointsize=4)
+
+plot(wt_table$mean.diff,-log10(wt_table$diffmeth.p.adj.fdr),xlab="Methylation Difference",
+              ylab=expression('-Log'[10]*' q-values'),col=alpha("grey",.01),pch=20 )
+
+  abline(v=-.2,lty = 2,col="grey")
+  abline(v=.2,lty = 2,col="grey")
+  abline(h=-log10(0.05),lty = 2,col="grey")
+  points(wt_table$mean.diff[abs(wt_table$mean.diff)>.2 & wt_table$diffmeth.p.adj.fdr<0.05],
+       -log10(wt_table$diffmeth.p.adj.fdr)[abs(wt_table$mean.diff)>.2 & wt_table$diffmeth.p.adj.fdr<0.05],
+      col=alpha("red",.01),pch=20)
+  legend("topright", paste("Gained Methylation",":",length(which(wt_table$mean.diff>.2 & wt_table$diffmeth.p.adj.fdr<0.05))), bty="n") 
+  legend("topleft", paste("Lost Methylation",":",length(which(wt_table$mean.diff<(-.2) & wt_table$diffmeth.p.adj.fdr<0.05))), bty="n") 
+dev.off()
+############################
+png("Volcano_mu.png",width= 3.25,
+  height= 3.25,units="in",
+  res=1200,pointsize=4)
+plot(mu_table$mean.diff,-log10(mu_table$diffmeth.p.adj.fdr),xlab="Methylation Difference",
+              ylab=expression('-Log'[10]*' q-values'),col=alpha("grey",.01),pch=20 )
+
+  abline(v=-.2,lty = 2,col="grey")
+  abline(v=.2,lty = 2,col="grey")
+  abline(h=-log10(0.05),lty = 2,col="grey")
+  points(mu_table$mean.diff[abs(mu_table$mean.diff)>.2 & mu_table$diffmeth.p.adj.fdr<0.05],
+       -log10(mu_table$diffmeth.p.adj.fdr)[abs(mu_table$mean.diff)>.2 & mu_table$diffmeth.p.adj.fdr<0.05],
+      col=alpha("red",.01),pch=20)
+  legend("topright", paste("Gained Methylation",":",length(which(mu_table$mean.diff>.2 & mu_table$diffmeth.p.adj.fdr<0.05))), bty="n") 
+  legend("topleft", paste("Lost Methylation",":",length(which(mu_table$mean.diff<(-.2) & mu_table$diffmeth.p.adj.fdr<0.05))), bty="n") 
+dev.off()
+#########################
+pdf("density.pdf")
+par(mfrow=c(1,1))
+ix = mu_table$diffmeth.p.adj.fdr<0.05
+plot(density(mu_table$mean.diff[ix]),col="red",main="Methylation Difference (FDR 5%)")
+
+ix = wt_table$diffmeth.p.adj.fdr<0.05
+lines(density(wt_table$mean.diff[ix]),col="blue")
+
+legend("topright",c("p53 MT","p53 WT"),fill=c('red','blue'))
+dev.off()
