@@ -157,6 +157,8 @@ for(ix in 1:dim(meth.norm)[1]){
            meth.norm.centered[ix,80] = meth.norm[ix,80]-mean(meth.norm[ix,79:80])
 }
 
+meth.norm.centered = meth.norm.centered[complete.cases(meth.norm.centered),]
+
 ###########ColSideColors=clab
 track=as.character(rnb.set.filtered.pheno$TP53)
 track[track=="WT"]=1
@@ -176,7 +178,7 @@ png("heatmap_FDR5e-3_DIF25_MT_OR_WT_centeredOnPatient.png",width= 3.25,
   height= 3.25,units="in",
   res=1200,pointsize=4)
 heatmap.3(as.matrix(meth.norm.centered),col=colors,scale="none", trace="none",distfun = function(x) get_dist(x,method="pearson"),
-srtCol=90,labRow = FALSE,xlab="", ylab="11772 CpGs",key.title="Methylation lvl",ColSideColors=ColSideColors=cbind(TP53=clab,Response=clab2))
+srtCol=90,labRow = FALSE,xlab="", ylab="11808 CpGs",key.title="Methylation lvl",ColSideColors=cbind(TP53=clab,Response=clab2))
 dev.off()
 
 
