@@ -18,6 +18,8 @@ dmc_treated_byTP53_table <-get.table(dmc_treated_byTP53, comparison, "sites", re
 saveRDS(dmc_treated_byTP53_table,"dmc_treated_byTP53_table.rds")
 ######################################################################################################################################
 meth.filtered<-meth(rnb.set.filtered)
+saveRDS(meth.filtered,"meth.filtered.rds")
+saveRDS(rnb.set.filtered@pheno,"rnb.set.filtered.pheno.rds")
 ######################################################################################################################################
 options(scipen=999)
 library(gplots)
@@ -67,4 +69,32 @@ srtCol=90,labRow = FALSE,xlab="", ylab="CpGs",key.title="Methylation lvl",ColSid
 legend("topright",legend=c("TP53 WT","TP53 MT"),fill=c("#ffb3ba","#baffc9"), border=T, bty="n" )
 dev.off()
 ######################################################################################################################################
+dmc_untreated_byTP53_table = readRDS("dmc_untreated_byTP53_table.rds")
+meth.filtered = readRDS("meth.filtered.rds")
+rnb.set.filtered.pheno = readRDS("rnb.set.filtered.pheno.rds")
+
+meth.filtered.sig.untreated=meth.filtered[which(dmc_untreated_byTP53_table$diffmeth.p.adj.fdr<0.05 & abs(dmc_untreated_byTP53_table$mean.diff)>.25),
+                               which(rnb.set.filtered.pheno$Treatment=="Untreated")]
+
+meth.filtered.sig.treated=meth.filtered[which(dmc_untreated_byTP53_table$diffmeth.p.adj.fdr<0.05 & abs(dmc_untreated_byTP53_table$mean.diff)>.25),
+                               which(rnb.set.filtered.pheno$Treatment=="Treated")]
+
+
+pdf("primed_change_scatter.pdf")
+ix = rnb.set.filtered.pheno$TP53=="WT"
+plot(meth.filtered.sig.untreated[ix], meth.filtered.sig.treated[ix], xlab= "Untreated", ylab= "Decitabine Treated")
+abline(0,1,col="blue")
+ix = rnb.set.filtered.pheno$TP53=="MU"
+points(meth.filtered.sig.untreated[ix], meth.filtered.sig.treated[ix],col="red")
+legend("topleft",legend=c("TP53 WT","TP53 MT"),fill=c("black","red"), border=T, bty="n" )
+abline(0,1,col="blue")
+dev.off()
+
+pdf("primed_change_density.pdf")
+ix = rnb.set.filtered.pheno$TP53=="WT"
+plot(density(meth.filtered.sig.untreated[ix]- meth.filtered.sig.treated[ix],na.rm=T))
+ix = rnb.set.filtered.pheno$TP53=="MU"
+lines(density(meth.filtered.sig.untreated[ix]- meth.filtered.sig.treated[ix],na.rm=T),col="red")
+legend("topright",legend=c("TP53 WT","TP53 MT"),fill=c("black","red"), border=T, bty="n" )
+dev.off()
 
