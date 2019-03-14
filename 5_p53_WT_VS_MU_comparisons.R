@@ -72,7 +72,7 @@ meth.filtered.sig = meth.filtered.sig[complete.cases(meth.filtered.sig),]
 colors <- rev(colorRampPalette( (brewer.pal(9, "RdBu")) )(20))
 
 ###########
-meth.norm = meth.filtered.sig
+meth.norm = meth.filtered[ix, ]
 meth.norm.centered = meth.norm
 for(ix in 1:dim(meth.norm)[1]){ 
            meth.norm.centered[ix,1] = meth.norm[ix,1]-mean(meth.norm[ix,1:2])
@@ -158,26 +158,59 @@ for(ix in 1:dim(meth.norm)[1]){
 }
 
 ###########ColSideColors=clab
+track=as.character(rnb.set.filtered.pheno$TP53)
+track[track=="WT"]=1
+track[track=="MU"]=2
+track=as.numeric(track)
+colores=c("#ffb3ba","#baffc9")
+clab=as.character(colores[track])
+
+track=as.character(rnb.set.filtered.pheno$Response)
+track[track=="NO"]=1
+track[track=="YES"]=2
+track=as.numeric(track)
+colores=c("black","red")
+clab2=as.character(colores[track])
 
 png("heatmap_FDR5e-3_DIF25_MT_OR_WT_centeredOnPatient.png",width= 3.25,
   height= 3.25,units="in",
   res=1200,pointsize=4)
-heatmap.2(as.matrix(meth.norm.centered),col=colors,scale="none", trace="none",distfun = function(x) get_dist(x,method="pearson"),
-srtCol=90,labRow = FALSE,xlab="", ylab="11772 CpGs",key.title="Methylation lvl",ColSideColors=clab)
-
-legend("topright",legend=c("TP53 WT","TP53 Mu"),fill=c("#ffb3ba","#baffc9"), border=T, bty="n" )
+heatmap.3(as.matrix(meth.norm.centered),col=colors,scale="none", trace="none",distfun = function(x) get_dist(x,method="pearson"),
+srtCol=90,labRow = FALSE,xlab="", ylab="11772 CpGs",key.title="Methylation lvl",ColSideColors=ColSideColors=cbind(TP53=clab,Response=clab2))
 dev.off()
 
 
 ###########
+ix = (wt_table$mean.diff<(-.25) & wt_table$diffmeth.p.adj.fdr<0.05) | (mu_table$mean.diff<(-.25) & mu_table$diffmeth.p.adj.fdr<0.05)
 
+meth.filtered_diff = meth.filtered[ix, which(rnb.set.filtered.pheno$Treatment=="Treated")] - 
+                     meth.filtered[ix, which(rnb.set.filtered.pheno$Treatment=="Untreated")]
+
+meth.filtered_diff = meth.filtered_diff[complete.cases(meth.filtered_diff),]
+
+track=as.character(rnb.set.filtered.pheno$TP53)[which(rnb.set.filtered.pheno$Treatment=="Treated")]
+track[track=="WT"]=1
+track[track=="MU"]=2
+track=as.numeric(track)
+colores=c("#ffb3ba","#baffc9")
+clab=as.character(colores[track])
+
+track=as.character(rnb.set.filtered.pheno$Response)[which(rnb.set.filtered.pheno$Treatment=="Treated")]
+track[track=="NO"]=1
+track[track=="YES"]=2
+track=as.numeric(track)
+colores=c("black","red")
+clab2=as.character(colores[track])
 
 ###########ColSide
-png("heatmap_FDR5e-3_DIF25_MT_OR_WT_centeredOnPatient.png",width= 3.25,
+png("heatmap_FDR5e-3_DIF25_MT_OR_WT_difference.png",width= 3.25,
   height= 3.25,units="in",
   res=1200,pointsize=4)
-heatmap.2(as.matrix(meth.norm.centered),col=colors,scale="none", trace="none",distfun = function(x) get_dist(x,method="pearson"),
-srtCol=90,labRow = FALSE,xlab="", ylab="11772 CpGs",key.title="Methylation lvl",ColSideColors=clab)
+heatmap.3(as.matrix(meth.filtered_diff),col=colors,scale="row", trace="none",distfun = function(x) get_dist(x,method="pearson"),
+srtCol=90,labRow = FALSE,xlab="", ylab="11772 CpGs",key.title="Methylation lvl",ColSideColors=cbind(TP53=clab,Response=clab2))
+dev.off()
 
-legend("topright",legend=c("TP53 WT","TP53 Mu"),fill=c("#ffb3ba","#baffc9"), border=T, bty="n" )
+pdf("Labels.pdf")
+plot(NULL)
+legend("topright",legend=c("TP53 WT","TP53 MT","NoResponse","Response"),fill=c("#ffb3ba","#baffc9","black","red"), border=T, bty="n" )
 dev.off()
